@@ -460,9 +460,100 @@
     .hero-brand { gap:14px; }
     .cards-grid { grid-template-columns:1fr; }
   }
+
+  /* ── LOGIN SCREEN ──────────────────────────────────────────── */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #login-screen.hidden { display: none; }
+  .login-box {
+    background: var(--card);
+    border: 1px solid var(--border-red);
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .login-logo {
+    text-align: center;
+    font-family: 'Oswald', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    color: white;
+    text-transform: uppercase;
+  }
+  .login-sub {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    margin-top: -10px;
+  }
+  .login-field { display: flex; flex-direction: column; gap: 6px; }
+  .login-field label {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .login-field input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-field input:focus { border-color: var(--red); }
+  .login-error {
+    color: #f87171;
+    font-size: 13px;
+    text-align: center;
+    display: none;
+    background: rgba(248,113,113,0.08);
+    border-radius: 8px;
+    padding: 8px;
+  }
+  .login-error.show { display: block; }
 </style>
 </head>
 <body>
+
+<!-- ── LOGIN SCREEN ──────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Rambla SG</div>
+    <div class="login-sub">Settore Giovanile — Accesso</div>
+    <div class="login-field">
+      <label>Nome utente</label>
+      <input type="text" id="login-user" placeholder="Es. Siro" autocomplete="username" />
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <p class="login-error" id="login-error">Credenziali non valide. Riprova.</p>
+    <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px" onclick="doLogin()">Accedi</button>
+  </div>
+</div>
 
 <!-- ── HERO ──────────────────────────────────────────────────── -->
 <div class="hero">
@@ -721,15 +812,38 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
 // ── FIREBASE CONFIG ────────────────────────────────────────────
-// Sostituisci con i valori del tuo progetto "rambla-giovanile"
 const firebaseConfig = {
-  apiKey:            "INSERISCI_API_KEY",
+  apiKey:            "AIzaSyD3RTTr14Wm7Z7KzyuPyuMaAfWPlDGga6U",
   authDomain:        "rambla-giovanile.firebaseapp.com",
   projectId:         "rambla-giovanile",
-  storageBucket:     "rambla-giovanile.appspot.com",
-  messagingSenderId: "INSERISCI_SENDER_ID",
-  appId:             "INSERISCI_APP_ID"
+  storageBucket:     "rambla-giovanile.firebasestorage.app",
+  messagingSenderId: "548431993367",
+  appId:             "1:548431993367:web:d19054d9d8648367771a52"
 };
+// ── LOGIN ─────────────────────────────────────────────────────
+const USERS = { 'Siro': 'UPRISING', 'Ilenia': 'UPRISING' };
+(function checkSession() {
+  if (sessionStorage.getItem('rambla_user'))
+    document.getElementById('login-screen').classList.add('hidden');
+})();
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  if (USERS[u] && USERS[u] === p) {
+    sessionStorage.setItem('rambla_user', u);
+    document.getElementById('login-screen').classList.add('hidden');
+    err.classList.remove('show');
+  } else {
+    err.classList.add('show');
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+  }
+}
+['login-user','login-pass'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+});
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 db.enablePersistence({ synchronizeTabs: true })
