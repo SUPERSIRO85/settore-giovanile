@@ -1,0 +1,9 @@
+{
+  "name": "Settore Giovanile Rambla",
+  "short_name": "Rambla SG",
+  "theme_color": "#ad2c41",
+  "background_color": "#141820",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": []
+}
