@@ -717,20 +717,45 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
-let tesserati  = JSON.parse(localStorage.getItem('rambla_tesserati')  || '[]');
-let provini    = JSON.parse(localStorage.getItem('rambla_provini')    || '[]');
-let mister     = JSON.parse(localStorage.getItem('rambla_mister')     || '[]');
-let dirigenti  = JSON.parse(localStorage.getItem('rambla_dirigenti')  || '[]');
-let sortState  = { tesserati:{col:'cognome',dir:1}, provini:{col:'cognome',dir:1} };
+// ── FIREBASE CONFIG ────────────────────────────────────────────
+// Sostituisci con i valori del tuo progetto "rambla-giovanile"
+const firebaseConfig = {
+  apiKey:            "INSERISCI_API_KEY",
+  authDomain:        "rambla-giovanile.firebaseapp.com",
+  projectId:         "rambla-giovanile",
+  storageBucket:     "rambla-giovanile.appspot.com",
+  messagingSenderId: "INSERISCI_SENDER_ID",
+  appId:             "INSERISCI_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+db.enablePersistence({ synchronizeTabs: true })
+  .catch(err => console.warn('Offline persistence:', err.code));
 
-function save() {
-  localStorage.setItem('rambla_tesserati', JSON.stringify(tesserati));
-  localStorage.setItem('rambla_provini',   JSON.stringify(provini));
-  localStorage.setItem('rambla_mister',    JSON.stringify(mister));
-  localStorage.setItem('rambla_dirigenti', JSON.stringify(dirigenti));
-}
-function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+// ── STATO LOCALE (aggiornato da onSnapshot) ───────────────────
+let tesserati = [], provini = [], mister = [], dirigenti = [];
+let sortState = { tesserati:{col:'cognome',dir:1}, provini:{col:'cognome',dir:1} };
+
+// ── LISTENER REALTIME ─────────────────────────────────────────
+db.collection('tesserati').onSnapshot(snap => {
+  tesserati = snap.docs.map(d => ({id:d.id,...d.data()}));
+  renderTesserati();
+});
+db.collection('provini').onSnapshot(snap => {
+  provini = snap.docs.map(d => ({id:d.id,...d.data()}));
+  renderProvini();
+});
+db.collection('mister').onSnapshot(snap => {
+  mister = snap.docs.map(d => ({id:d.id,...d.data()}));
+  renderMister();
+});
+db.collection('dirigenti').onSnapshot(snap => {
+  dirigenti = snap.docs.map(d => ({id:d.id,...d.data()}));
+  renderDirigenti();
+});
 
 const TABS = ['tesserati','provini','mister','dirigenti'];
 function switchTab(tab) {
@@ -877,13 +902,16 @@ function clearForm(type) {
 }
 
 // ── SAVE / EDIT / DELETE ─────────────────────────────────────
-function saveTesserato() {
+async function saveTesserato() {
   const cognome=document.getElementById('t-cognome').value.trim(),nome=document.getElementById('t-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-t-id').value;
-  const obj={id:id||genId(),cognome,nome,anno:document.getElementById('t-anno').value,categoria:document.getElementById('t-categoria').value,tel:document.getElementById('t-tel').value.trim(),ruolo:document.getElementById('t-ruolo').value,note:document.getElementById('t-note').value.trim()};
-  if(id)tesserati[tesserati.findIndex(p=>p.id===id)]=obj; else tesserati.push(obj);
-  save();closeModal('tesserati');renderTesserati();
+  const obj={cognome,nome,anno:document.getElementById('t-anno').value,categoria:document.getElementById('t-categoria').value,tel:document.getElementById('t-tel').value.trim(),ruolo:document.getElementById('t-ruolo').value,note:document.getElementById('t-note').value.trim()};
+  try{
+    if(id) await db.collection('tesserati').doc(id).set(obj);
+    else    await db.collection('tesserati').add(obj);
+    closeModal('tesserati');
+  }catch(e){alert('Errore salvataggio: '+e.message);}
 }
 function editTesserato(id) {
   const p=tesserati.find(x=>x.id===id);if(!p)return;
@@ -893,15 +921,21 @@ function editTesserato(id) {
   document.getElementById('t-categoria').value=p.categoria||'';document.getElementById('t-ruolo').value=p.ruolo||'';
   openModal('tesserati',false);
 }
-function deleteTesserato(id){if(!confirm('Eliminare?'))return;tesserati=tesserati.filter(p=>p.id!==id);save();renderTesserati();}
+async function deleteTesserato(id){
+  if(!confirm('Eliminare?'))return;
+  try{await db.collection('tesserati').doc(id).delete();}catch(e){alert('Errore: '+e.message);}
+}
 
-function saveProvino() {
+async function saveProvino() {
   const cognome=document.getElementById('p-cognome').value.trim(),nome=document.getElementById('p-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-p-id').value;
-  const obj={id:id||genId(),cognome,nome,anno:document.getElementById('p-anno').value,categoria:document.getElementById('p-categoria').value,data:document.getElementById('p-data').value,stato:document.getElementById('p-stato').value,tel:document.getElementById('p-tel').value.trim(),ruolo:document.getElementById('p-ruolo').value,note:document.getElementById('p-note').value.trim()};
-  if(id)provini[provini.findIndex(p=>p.id===id)]=obj; else provini.push(obj);
-  save();closeModal('provini');renderProvini();
+  const obj={cognome,nome,anno:document.getElementById('p-anno').value,categoria:document.getElementById('p-categoria').value,data:document.getElementById('p-data').value,stato:document.getElementById('p-stato').value,tel:document.getElementById('p-tel').value.trim(),ruolo:document.getElementById('p-ruolo').value,note:document.getElementById('p-note').value.trim()};
+  try{
+    if(id) await db.collection('provini').doc(id).set(obj);
+    else    await db.collection('provini').add(obj);
+    closeModal('provini');
+  }catch(e){alert('Errore salvataggio: '+e.message);}
 }
 function editProvino(id) {
   const p=provini.find(x=>x.id===id);if(!p)return;
@@ -912,15 +946,21 @@ function editProvino(id) {
   document.getElementById('p-stato').value=p.stato||'In valutazione';document.getElementById('p-ruolo').value=p.ruolo||'';
   openModal('provini',false);
 }
-function deleteProvino(id){if(!confirm('Eliminare?'))return;provini=provini.filter(p=>p.id!==id);save();renderProvini();}
+async function deleteProvino(id){
+  if(!confirm('Eliminare?'))return;
+  try{await db.collection('provini').doc(id).delete();}catch(e){alert('Errore: '+e.message);}
+}
 
-function saveMister() {
+async function saveMister() {
   const cognome=document.getElementById('m-cognome').value.trim(),nome=document.getElementById('m-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-m-id').value;
-  const obj={id:id||genId(),cognome,nome,tel:document.getElementById('m-tel').value.trim(),categoria:document.getElementById('m-categoria').value,ruolo:document.getElementById('m-ruolo').value,patente:document.getElementById('m-patente').value,note:document.getElementById('m-note').value.trim()};
-  if(id)mister[mister.findIndex(p=>p.id===id)]=obj; else mister.push(obj);
-  save();closeModal('mister');renderMister();
+  const obj={cognome,nome,tel:document.getElementById('m-tel').value.trim(),categoria:document.getElementById('m-categoria').value,ruolo:document.getElementById('m-ruolo').value,patente:document.getElementById('m-patente').value,note:document.getElementById('m-note').value.trim()};
+  try{
+    if(id) await db.collection('mister').doc(id).set(obj);
+    else    await db.collection('mister').add(obj);
+    closeModal('mister');
+  }catch(e){alert('Errore salvataggio: '+e.message);}
 }
 function editMister(id) {
   const p=mister.find(x=>x.id===id);if(!p)return;
@@ -930,15 +970,21 @@ function editMister(id) {
   document.getElementById('m-categoria').value=p.categoria||'';document.getElementById('m-ruolo').value=p.ruolo||'';document.getElementById('m-patente').value=p.patente||'';
   openModal('mister',false);
 }
-function deleteMister(id){if(!confirm('Eliminare?'))return;mister=mister.filter(p=>p.id!==id);save();renderMister();}
+async function deleteMister(id){
+  if(!confirm('Eliminare?'))return;
+  try{await db.collection('mister').doc(id).delete();}catch(e){alert('Errore: '+e.message);}
+}
 
-function saveDirigente() {
+async function saveDirigente() {
   const cognome=document.getElementById('d-cognome').value.trim(),nome=document.getElementById('d-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-d-id').value;
-  const obj={id:id||genId(),cognome,nome,tel:document.getElementById('d-tel').value.trim(),ruolo:document.getElementById('d-ruolo').value,categoria:document.getElementById('d-categoria').value,email:document.getElementById('d-email').value.trim(),note:document.getElementById('d-note').value.trim()};
-  if(id)dirigenti[dirigenti.findIndex(p=>p.id===id)]=obj; else dirigenti.push(obj);
-  save();closeModal('dirigenti');renderDirigenti();
+  const obj={cognome,nome,tel:document.getElementById('d-tel').value.trim(),ruolo:document.getElementById('d-ruolo').value,categoria:document.getElementById('d-categoria').value,email:document.getElementById('d-email').value.trim(),note:document.getElementById('d-note').value.trim()};
+  try{
+    if(id) await db.collection('dirigenti').doc(id).set(obj);
+    else    await db.collection('dirigenti').add(obj);
+    closeModal('dirigenti');
+  }catch(e){alert('Errore salvataggio: '+e.message);}
 }
 function editDirigente(id) {
   const p=dirigenti.find(x=>x.id===id);if(!p)return;
@@ -948,15 +994,22 @@ function editDirigente(id) {
   document.getElementById('d-ruolo').value=p.ruolo||'';document.getElementById('d-categoria').value=p.categoria||'';
   openModal('dirigenti',false);
 }
-function deleteDirigente(id){if(!confirm('Eliminare?'))return;dirigenti=dirigenti.filter(p=>p.id!==id);save();renderDirigenti();}
+async function deleteDirigente(id){
+  if(!confirm('Eliminare?'))return;
+  try{await db.collection('dirigenti').doc(id).delete();}catch(e){alert('Errore: '+e.message);}
+}
 
-function promuovi(id){
+async function promuovi(id){
   const p=provini.find(x=>x.id===id);if(!p)return;
   if(!confirm(`Spostare ${p.nome} ${p.cognome} nella lista Tesserati?`))return;
-  const {stato,data,...rest}=p;
-  tesserati.push({...rest,id:genId()});
-  provini=provini.filter(x=>x.id!==id);
-  save();renderProvini();renderTesserati();switchTab('tesserati');
+  const {stato,data,id:_,...rest}=p;
+  try{
+    const batch=db.batch();
+    batch.set(db.collection('tesserati').doc(),rest);
+    batch.delete(db.collection('provini').doc(id));
+    await batch.commit();
+    switchTab('tesserati');
+  }catch(e){alert('Errore: '+e.message);}
 }
 
 function showNote(enc){document.getElementById('note-content').textContent=decodeURIComponent(enc);document.getElementById('overlay-note').classList.add('open');}
@@ -976,7 +1029,6 @@ function exportTXT(type){
 }
 function download(content,filename,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=filename;a.click();}
 
-renderTesserati(); renderProvini(); renderMister(); renderDirigenti();
 document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 </script>
 </body>
