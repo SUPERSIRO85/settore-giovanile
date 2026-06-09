@@ -295,6 +295,17 @@
   tbody tr:last-child { border-bottom:none; }
   tbody tr:hover { background:rgba(173,44,65,0.05); }
   tbody td { padding:13px 16px; font-size:14px; vertical-align:middle; }
+
+  /* colonna azioni sempre visibile quando la tabella scrolla */
+  table th:last-child,
+  table td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+  }
+  thead th:last-child { background: var(--card2); z-index: 2; }
+  tbody td:last-child { background: var(--card); }
+  tbody tr:hover td:last-child { background: rgba(173,44,65,0.05); }
   td strong { font-weight:600; }
 
   /* ── PEOPLE CARDS (Mister / Dirigenti) ──────────────── */
