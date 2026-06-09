@@ -458,6 +458,16 @@
   .field input:focus,.field select:focus,.field textarea:focus { border-color:var(--red); }
   .field select option { background:var(--bg2); }
   .field textarea { resize:vertical; min-height:72px; }
+
+  /* ── CAMPI DATA SEPARATI ─────────────────────────────────── */
+  .date-split { display:flex; gap:8px; align-items:stretch; }
+  .date-split input { width:auto; text-align:center; padding:10px 8px; }
+  .date-split .dd   { width:62px;  flex-shrink:0; }
+  .date-split select { flex:1; min-width:0; }
+  .date-split .yyyy { width:80px;  flex-shrink:0; }
+  .date-split input::-webkit-outer-spin-button,
+  .date-split input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .date-split input[type=number] { -moz-appearance:textfield; }
   .modal-foot {
     padding:16px 24px 20px; border-top:1px solid var(--border);
     display:flex; justify-content:flex-end; gap:8px;
@@ -689,7 +699,20 @@
       <div class="form-grid">
         <div class="field"><label>Cognome *</label><input type="text" id="t-cognome" placeholder="Es. Rossi"></div>
         <div class="field"><label>Nome *</label><input type="text" id="t-nome" placeholder="Es. Marco"></div>
-        <div class="field"><label>Data di nascita</label><input type="date" id="t-dataNascita"></div>
+        <div class="field full"><label>Data di nascita</label>
+          <div class="date-split">
+            <input type="number" id="t-giorno" class="dd" placeholder="GG" min="1" max="31">
+            <select id="t-mese"><option value="">Mese</option>
+              <option value="01">Gennaio</option><option value="02">Febbraio</option>
+              <option value="03">Marzo</option><option value="04">Aprile</option>
+              <option value="05">Maggio</option><option value="06">Giugno</option>
+              <option value="07">Luglio</option><option value="08">Agosto</option>
+              <option value="09">Settembre</option><option value="10">Ottobre</option>
+              <option value="11">Novembre</option><option value="12">Dicembre</option>
+            </select>
+            <input type="number" id="t-anno" class="yyyy" placeholder="AAAA" min="1990" max="2030">
+          </div>
+        </div>
         <div class="field"><label>Categoria</label>
           <select id="t-categoria"><option value="">— Seleziona —</option>
             <option>Piccoli Amici</option><option>Primi Calci</option>
@@ -719,7 +742,20 @@
       <div class="form-grid">
         <div class="field"><label>Cognome *</label><input type="text" id="p-cognome" placeholder="Es. Bianchi"></div>
         <div class="field"><label>Nome *</label><input type="text" id="p-nome" placeholder="Es. Luca"></div>
-        <div class="field"><label>Data di nascita</label><input type="date" id="p-dataNascita"></div>
+        <div class="field full"><label>Data di nascita</label>
+          <div class="date-split">
+            <input type="number" id="p-giorno" class="dd" placeholder="GG" min="1" max="31">
+            <select id="p-mese"><option value="">Mese</option>
+              <option value="01">Gennaio</option><option value="02">Febbraio</option>
+              <option value="03">Marzo</option><option value="04">Aprile</option>
+              <option value="05">Maggio</option><option value="06">Giugno</option>
+              <option value="07">Luglio</option><option value="08">Agosto</option>
+              <option value="09">Settembre</option><option value="10">Ottobre</option>
+              <option value="11">Novembre</option><option value="12">Dicembre</option>
+            </select>
+            <input type="number" id="p-anno" class="yyyy" placeholder="AAAA" min="1990" max="2030">
+          </div>
+        </div>
         <div class="field"><label>Categoria</label>
           <select id="p-categoria"><option value="">— Seleziona —</option>
             <option>Piccoli Amici</option><option>Primi Calci</option>
@@ -865,6 +901,34 @@ db.enablePersistence({ synchronizeTabs: true })
 
 // ── STATO LOCALE (aggiornato da onSnapshot) ───────────────────
 let tesserati = [], provini = [], mister = [], dirigenti = [];
+
+// ── UTILITÀ DATA NASCITA ──────────────────────────────────────
+function buildDate(g, m, a) {
+  const as=String(a||'').trim(), ms=m||'', gs=String(g||'').trim();
+  if(!as) return '';
+  if(!ms) return as;
+  if(!gs) return `${ms}/${as}`;
+  return `${gs.padStart(2,'0')}/${ms}/${as}`;
+}
+function setDateFields(str, prefix) {
+  const s=str||'';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
+    const[y,m,g]=s.split('-');
+    document.getElementById(prefix+'-giorno').value=parseInt(g,10);
+    document.getElementById(prefix+'-mese').value=m;
+    document.getElementById(prefix+'-anno').value=y;
+    return;
+  }
+  const parts=s.split('/');
+  if(parts.length===3){document.getElementById(prefix+'-giorno').value=parseInt(parts[0],10)||'';document.getElementById(prefix+'-mese').value=parts[1];document.getElementById(prefix+'-anno').value=parts[2];}
+  else if(parts.length===2){document.getElementById(prefix+'-giorno').value='';document.getElementById(prefix+'-mese').value=parts[0];document.getElementById(prefix+'-anno').value=parts[1];}
+  else{document.getElementById(prefix+'-giorno').value='';document.getElementById(prefix+'-mese').value='';document.getElementById(prefix+'-anno').value=s;}
+}
+function fmtNascita(d){
+  if(!d)return'—';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(d)){const[y,m,g]=d.split('-');return`${g}/${m}/${y}`;}
+  return d;
+}
 let sortState = { tesserati:{col:'cognome',dir:1}, provini:{col:'cognome',dir:1} };
 
 // ── LISTENER REALTIME ─────────────────────────────────────────
@@ -918,7 +982,7 @@ function renderTesserati() {
   if(!data.length){body.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="icon">👦</div><p>Nessun tesserato trovato.</p></div></td></tr>`;updateBadges();return;}
   body.innerHTML=data.map(p=>`<tr>
     <td><strong>${esc(p.cognome)}</strong></td><td>${esc(p.nome)}</td>
-    <td>${p.dataNascita?fmtDate(p.dataNascita):'—'}</td>
+    <td>${fmtNascita(p.dataNascita)}</td>
     <td><span class="cat-badge ${catClass(p.categoria)}">${esc(p.categoria||'—')}</span></td>
     <td>${p.tel?`<a class="tel-link" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>`:'—'}</td>
     <td>${p.nomeGenitore?`<span style="font-size:13px">${esc(p.nomeGenitore)}</span>`:'—'}</td>
@@ -942,7 +1006,7 @@ function renderProvini() {
   if(!data.length){body.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="icon">🔍</div><p>Nessun provino trovato.</p></div></td></tr>`;updateBadges();return;}
   body.innerHTML=data.map(p=>`<tr>
     <td><strong>${esc(p.cognome)}</strong></td><td>${esc(p.nome)}</td>
-    <td>${p.dataNascita?fmtDate(p.dataNascita):'—'}</td>
+    <td>${fmtNascita(p.dataNascita)}</td>
     <td><span class="cat-badge ${catClass(p.categoria)}">${esc(p.categoria||'—')}</span></td>
     <td>${p.data?fmtDate(p.data):'—'}</td>
     <td><span class="status-pill ${statusClass(p.stato)}">${esc(p.stato||'—')}</span></td>
@@ -1025,8 +1089,8 @@ function closeModal(t){document.getElementById('overlay-'+t).classList.remove('o
 function closeOverlay(id){document.getElementById(id).classList.remove('open');}
 
 function clearForm(type) {
-  if(type==='tesserati'){['t-cognome','t-nome','t-dataNascita','t-tel','t-nomeGenitore','t-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('t-categoria').value='';document.getElementById('t-ruolo').value='';}
-  else if(type==='provini'){['p-cognome','p-nome','p-dataNascita','p-tel','p-nomeGenitore','p-note','p-data'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-categoria').value='';document.getElementById('p-ruolo').value='';document.getElementById('p-stato').value='In valutazione';}
+  if(type==='tesserati'){['t-cognome','t-nome','t-giorno','t-anno','t-tel','t-nomeGenitore','t-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('t-mese').value='';document.getElementById('t-categoria').value='';document.getElementById('t-ruolo').value='';}
+  else if(type==='provini'){['p-cognome','p-nome','p-giorno','p-anno','p-tel','p-nomeGenitore','p-note','p-data'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-mese').value='';document.getElementById('p-categoria').value='';document.getElementById('p-ruolo').value='';document.getElementById('p-stato').value='In valutazione';}
   else if(type==='mister'){['m-cognome','m-nome','m-tel','m-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('m-categoria').value='';document.getElementById('m-ruolo').value='';document.getElementById('m-patente').value='';}
   else if(type==='dirigenti'){['d-cognome','d-nome','d-tel','d-note','d-email'].forEach(id=>document.getElementById(id).value='');document.getElementById('d-ruolo').value='';document.getElementById('d-categoria').value='';}
 }
@@ -1036,7 +1100,7 @@ async function saveTesserato() {
   const cognome=document.getElementById('t-cognome').value.trim(),nome=document.getElementById('t-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-t-id').value;
-  const obj={cognome,nome,dataNascita:document.getElementById('t-dataNascita').value,categoria:document.getElementById('t-categoria').value,tel:document.getElementById('t-tel').value.trim(),nomeGenitore:document.getElementById('t-nomeGenitore').value.trim(),ruolo:document.getElementById('t-ruolo').value,note:document.getElementById('t-note').value.trim()};
+  const obj={cognome,nome,dataNascita:buildDate(document.getElementById('t-giorno').value,document.getElementById('t-mese').value,document.getElementById('t-anno').value),categoria:document.getElementById('t-categoria').value,tel:document.getElementById('t-tel').value.trim(),nomeGenitore:document.getElementById('t-nomeGenitore').value.trim(),ruolo:document.getElementById('t-ruolo').value,note:document.getElementById('t-note').value.trim()};
   try{
     if(id) await db.collection('tesserati').doc(id).set(obj);
     else    await db.collection('tesserati').add(obj);
@@ -1047,7 +1111,8 @@ function editTesserato(id) {
   const p=tesserati.find(x=>x.id===id);if(!p)return;
   document.getElementById('edit-t-id').value=id;
   document.getElementById('modal-t-title').textContent='Modifica Tesserato';
-  ['cognome','nome','dataNascita','tel','nomeGenitore','note'].forEach(k=>document.getElementById('t-'+k).value=p[k]||'');
+  ['cognome','nome','tel','nomeGenitore','note'].forEach(k=>document.getElementById('t-'+k).value=p[k]||'');
+  setDateFields(p.dataNascita||'','t');
   document.getElementById('t-categoria').value=p.categoria||'';document.getElementById('t-ruolo').value=p.ruolo||'';
   openModal('tesserati',false);
 }
@@ -1060,7 +1125,7 @@ async function saveProvino() {
   const cognome=document.getElementById('p-cognome').value.trim(),nome=document.getElementById('p-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-p-id').value;
-  const obj={cognome,nome,dataNascita:document.getElementById('p-dataNascita').value,categoria:document.getElementById('p-categoria').value,data:document.getElementById('p-data').value,stato:document.getElementById('p-stato').value,tel:document.getElementById('p-tel').value.trim(),nomeGenitore:document.getElementById('p-nomeGenitore').value.trim(),ruolo:document.getElementById('p-ruolo').value,note:document.getElementById('p-note').value.trim()};
+  const obj={cognome,nome,dataNascita:buildDate(document.getElementById('p-giorno').value,document.getElementById('p-mese').value,document.getElementById('p-anno').value),categoria:document.getElementById('p-categoria').value,data:document.getElementById('p-data').value,stato:document.getElementById('p-stato').value,tel:document.getElementById('p-tel').value.trim(),nomeGenitore:document.getElementById('p-nomeGenitore').value.trim(),ruolo:document.getElementById('p-ruolo').value,note:document.getElementById('p-note').value.trim()};
   try{
     if(id) await db.collection('provini').doc(id).set(obj);
     else    await db.collection('provini').add(obj);
@@ -1071,7 +1136,8 @@ function editProvino(id) {
   const p=provini.find(x=>x.id===id);if(!p)return;
   document.getElementById('edit-p-id').value=id;
   document.getElementById('modal-p-title').textContent='Modifica Provino';
-  ['cognome','nome','dataNascita','tel','nomeGenitore','note'].forEach(k=>document.getElementById('p-'+k).value=p[k]||'');
+  ['cognome','nome','tel','nomeGenitore','note'].forEach(k=>document.getElementById('p-'+k).value=p[k]||'');
+  setDateFields(p.dataNascita||'','p');
   document.getElementById('p-categoria').value=p.categoria||'';document.getElementById('p-data').value=p.data||'';
   document.getElementById('p-stato').value=p.stato||'In valutazione';document.getElementById('p-ruolo').value=p.ruolo||'';
   openModal('provini',false);
@@ -1153,14 +1219,14 @@ function exportCSV(type){
     ?['Cognome','Nome','Data nascita','Categoria','Telefono','Nome genitore','Ruolo','Note']
     :['Cognome','Nome','Data nascita','Categoria','Data Provino','Stato','Telefono','Nome genitore','Ruolo','Note'];
   const rows=data.map(p=>type==='tesserati'
-    ?[p.cognome,p.nome,p.dataNascita?fmtDate(p.dataNascita):'',p.categoria,p.tel,p.nomeGenitore,p.ruolo,p.note]
-    :[p.cognome,p.nome,p.dataNascita?fmtDate(p.dataNascita):'',p.categoria,p.data?fmtDate(p.data):'',p.stato,p.tel,p.nomeGenitore,p.ruolo,p.note]);
+    ?[p.cognome,p.nome,fmtNascita(p.dataNascita).replace('—',''),p.categoria,p.tel,p.nomeGenitore,p.ruolo,p.note]
+    :[p.cognome,p.nome,fmtNascita(p.dataNascita).replace('—',''),p.categoria,p.data?fmtDate(p.data):'',p.stato,p.tel,p.nomeGenitore,p.ruolo,p.note]);
   download([head,...rows].map(r=>r.map(c=>`"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n'),`${type}_${today()}.csv`,'text/csv');
 }
 function exportTXT(type){
   const data=type==='tesserati'?tesserati:provini;
   download(data.map((p,i)=>{
-    const nascita=p.dataNascita?fmtDate(p.dataNascita):'?';
+    const nascita=fmtNascita(p.dataNascita).replace('—','?');
     const l=[`${i+1}. ${p.cognome} ${p.nome} (${nascita}) — ${p.categoria||'N/D'}`];
     if(p.tel)l.push(`   Tel: ${p.tel}`);
     if(p.nomeGenitore)l.push(`   Genitore: ${p.nomeGenitore}`);
