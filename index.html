@@ -603,9 +603,9 @@
         <thead><tr>
           <th onclick="sortTable('tesserati','cognome')">Cognome ↕</th>
           <th onclick="sortTable('tesserati','nome')">Nome ↕</th>
-          <th onclick="sortTable('tesserati','anno')">Anno ↕</th>
+          <th onclick="sortTable('tesserati','dataNascita')">Data nascita ↕</th>
           <th onclick="sortTable('tesserati','categoria')">Categoria ↕</th>
-          <th>Telefono</th><th>Ruolo</th><th>Note</th><th></th>
+          <th>Telefono</th><th>Nome genitore</th><th>Ruolo</th><th>Note</th><th></th>
         </tr></thead>
         <tbody id="body-tesserati"></tbody>
       </table></div>
@@ -639,11 +639,11 @@
         <thead><tr>
           <th onclick="sortTable('provini','cognome')">Cognome ↕</th>
           <th onclick="sortTable('provini','nome')">Nome ↕</th>
-          <th onclick="sortTable('provini','anno')">Anno ↕</th>
+          <th onclick="sortTable('provini','dataNascita')">Data nascita ↕</th>
           <th onclick="sortTable('provini','categoria')">Categoria ↕</th>
           <th onclick="sortTable('provini','data')">Data Provino ↕</th>
           <th onclick="sortTable('provini','stato')">Stato ↕</th>
-          <th>Telefono</th><th>Note</th><th></th>
+          <th>Telefono</th><th>Nome genitore</th><th>Note</th><th></th>
         </tr></thead>
         <tbody id="body-provini"></tbody>
       </table></div>
@@ -678,13 +678,14 @@
       <div class="form-grid">
         <div class="field"><label>Cognome *</label><input type="text" id="t-cognome" placeholder="Es. Rossi"></div>
         <div class="field"><label>Nome *</label><input type="text" id="t-nome" placeholder="Es. Marco"></div>
-        <div class="field"><label>Anno di nascita</label><input type="number" id="t-anno" placeholder="Es. 2015" min="2000" max="2026"></div>
+        <div class="field"><label>Data di nascita</label><input type="date" id="t-dataNascita"></div>
         <div class="field"><label>Categoria</label>
           <select id="t-categoria"><option value="">— Seleziona —</option>
             <option>Piccoli Amici</option><option>Primi Calci</option>
             <option>Pulcini</option><option>Esordienti</option>
             <option>Giovanissimi</option><option>Allievi</option></select></div>
         <div class="field"><label>Tel. genitore</label><input type="tel" id="t-tel" placeholder="Es. 347 1234567"></div>
+        <div class="field"><label>Nome genitore</label><input type="text" id="t-nomeGenitore" placeholder="Es. Mario Rossi"></div>
         <div class="field"><label>Ruolo preferito</label>
           <select id="t-ruolo"><option value="">— Seleziona —</option>
             <option>Portiere</option><option>Difensore</option>
@@ -707,7 +708,7 @@
       <div class="form-grid">
         <div class="field"><label>Cognome *</label><input type="text" id="p-cognome" placeholder="Es. Bianchi"></div>
         <div class="field"><label>Nome *</label><input type="text" id="p-nome" placeholder="Es. Luca"></div>
-        <div class="field"><label>Anno di nascita</label><input type="number" id="p-anno" placeholder="Es. 2016" min="2000" max="2026"></div>
+        <div class="field"><label>Data di nascita</label><input type="date" id="p-dataNascita"></div>
         <div class="field"><label>Categoria</label>
           <select id="p-categoria"><option value="">— Seleziona —</option>
             <option>Piccoli Amici</option><option>Primi Calci</option>
@@ -721,6 +722,7 @@
             <option value="Non idoneo">Non idoneo ❌</option>
             <option value="In attesa">In attesa ⏳</option></select></div>
         <div class="field"><label>Tel. genitore</label><input type="tel" id="p-tel" placeholder="Es. 347 1234567"></div>
+        <div class="field"><label>Nome genitore</label><input type="text" id="p-nomeGenitore" placeholder="Es. Mario Bianchi"></div>
         <div class="field"><label>Ruolo osservato</label>
           <select id="p-ruolo"><option value="">— Seleziona —</option>
             <option>Portiere</option><option>Difensore</option>
@@ -902,12 +904,13 @@ function renderTesserati() {
   let data=sorted(tesserati.filter(p=>(p.nome+' '+p.cognome).toLowerCase().includes(q)&&(!cat||p.categoria===cat)),'tesserati');
   document.getElementById('count-t').textContent=data.length+' giocator'+(data.length===1?'e':'i');
   const body=document.getElementById('body-tesserati');
-  if(!data.length){body.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="icon">👦</div><p>Nessun tesserato trovato.</p></div></td></tr>`;updateBadges();return;}
+  if(!data.length){body.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="icon">👦</div><p>Nessun tesserato trovato.</p></div></td></tr>`;updateBadges();return;}
   body.innerHTML=data.map(p=>`<tr>
     <td><strong>${esc(p.cognome)}</strong></td><td>${esc(p.nome)}</td>
-    <td>${p.anno||'—'}</td>
+    <td>${p.dataNascita?fmtDate(p.dataNascita):'—'}</td>
     <td><span class="cat-badge ${catClass(p.categoria)}">${esc(p.categoria||'—')}</span></td>
     <td>${p.tel?`<a class="tel-link" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>`:'—'}</td>
+    <td>${p.nomeGenitore?`<span style="font-size:13px">${esc(p.nomeGenitore)}</span>`:'—'}</td>
     <td>${p.ruolo?`<span style="font-size:13px;color:var(--muted)">${esc(p.ruolo)}</span>`:'—'}</td>
     <td>${p.note?`<button class="note-btn" onclick="showNote('${encodeURIComponent(p.note)}')" title="Vedi">📝</button>`:'—'}</td>
     <td><div class="actions">
@@ -925,14 +928,15 @@ function renderProvini() {
   let data=sorted(provini.filter(p=>(p.nome+' '+p.cognome).toLowerCase().includes(q)&&(!cat||p.categoria===cat)&&(!stato||p.stato===stato)),'provini');
   document.getElementById('count-p').textContent=data.length+' provino'+(data.length===1?'':'i');
   const body=document.getElementById('body-provini');
-  if(!data.length){body.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="icon">🔍</div><p>Nessun provino trovato.</p></div></td></tr>`;updateBadges();return;}
+  if(!data.length){body.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="icon">🔍</div><p>Nessun provino trovato.</p></div></td></tr>`;updateBadges();return;}
   body.innerHTML=data.map(p=>`<tr>
     <td><strong>${esc(p.cognome)}</strong></td><td>${esc(p.nome)}</td>
-    <td>${p.anno||'—'}</td>
+    <td>${p.dataNascita?fmtDate(p.dataNascita):'—'}</td>
     <td><span class="cat-badge ${catClass(p.categoria)}">${esc(p.categoria||'—')}</span></td>
     <td>${p.data?fmtDate(p.data):'—'}</td>
     <td><span class="status-pill ${statusClass(p.stato)}">${esc(p.stato||'—')}</span></td>
     <td>${p.tel?`<a class="tel-link" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>`:'—'}</td>
+    <td>${p.nomeGenitore?`<span style="font-size:13px">${esc(p.nomeGenitore)}</span>`:'—'}</td>
     <td>${p.note?`<button class="note-btn" onclick="showNote('${encodeURIComponent(p.note)}')" title="Vedi">📝</button>`:'—'}</td>
     <td><div class="actions">
       ${p.stato==='Promosso'?`<button class="icon-btn prom" onclick="promuovi('${p.id}')" title="Sposta in Tesserati">⬆️</button>`:''}
@@ -1010,8 +1014,8 @@ function closeModal(t){document.getElementById('overlay-'+t).classList.remove('o
 function closeOverlay(id){document.getElementById(id).classList.remove('open');}
 
 function clearForm(type) {
-  if(type==='tesserati'){['t-cognome','t-nome','t-anno','t-tel','t-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('t-categoria').value='';document.getElementById('t-ruolo').value='';}
-  else if(type==='provini'){['p-cognome','p-nome','p-anno','p-tel','p-note','p-data'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-categoria').value='';document.getElementById('p-ruolo').value='';document.getElementById('p-stato').value='In valutazione';}
+  if(type==='tesserati'){['t-cognome','t-nome','t-dataNascita','t-tel','t-nomeGenitore','t-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('t-categoria').value='';document.getElementById('t-ruolo').value='';}
+  else if(type==='provini'){['p-cognome','p-nome','p-dataNascita','p-tel','p-nomeGenitore','p-note','p-data'].forEach(id=>document.getElementById(id).value='');document.getElementById('p-categoria').value='';document.getElementById('p-ruolo').value='';document.getElementById('p-stato').value='In valutazione';}
   else if(type==='mister'){['m-cognome','m-nome','m-tel','m-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('m-categoria').value='';document.getElementById('m-ruolo').value='';document.getElementById('m-patente').value='';}
   else if(type==='dirigenti'){['d-cognome','d-nome','d-tel','d-note','d-email'].forEach(id=>document.getElementById(id).value='');document.getElementById('d-ruolo').value='';document.getElementById('d-categoria').value='';}
 }
@@ -1021,7 +1025,7 @@ async function saveTesserato() {
   const cognome=document.getElementById('t-cognome').value.trim(),nome=document.getElementById('t-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-t-id').value;
-  const obj={cognome,nome,anno:document.getElementById('t-anno').value,categoria:document.getElementById('t-categoria').value,tel:document.getElementById('t-tel').value.trim(),ruolo:document.getElementById('t-ruolo').value,note:document.getElementById('t-note').value.trim()};
+  const obj={cognome,nome,dataNascita:document.getElementById('t-dataNascita').value,categoria:document.getElementById('t-categoria').value,tel:document.getElementById('t-tel').value.trim(),nomeGenitore:document.getElementById('t-nomeGenitore').value.trim(),ruolo:document.getElementById('t-ruolo').value,note:document.getElementById('t-note').value.trim()};
   try{
     if(id) await db.collection('tesserati').doc(id).set(obj);
     else    await db.collection('tesserati').add(obj);
@@ -1032,7 +1036,7 @@ function editTesserato(id) {
   const p=tesserati.find(x=>x.id===id);if(!p)return;
   document.getElementById('edit-t-id').value=id;
   document.getElementById('modal-t-title').textContent='Modifica Tesserato';
-  ['cognome','nome','anno','tel','note'].forEach(k=>document.getElementById('t-'+k).value=p[k]||'');
+  ['cognome','nome','dataNascita','tel','nomeGenitore','note'].forEach(k=>document.getElementById('t-'+k).value=p[k]||'');
   document.getElementById('t-categoria').value=p.categoria||'';document.getElementById('t-ruolo').value=p.ruolo||'';
   openModal('tesserati',false);
 }
@@ -1045,7 +1049,7 @@ async function saveProvino() {
   const cognome=document.getElementById('p-cognome').value.trim(),nome=document.getElementById('p-nome').value.trim();
   if(!cognome||!nome){alert('Inserisci nome e cognome!');return;}
   const id=document.getElementById('edit-p-id').value;
-  const obj={cognome,nome,anno:document.getElementById('p-anno').value,categoria:document.getElementById('p-categoria').value,data:document.getElementById('p-data').value,stato:document.getElementById('p-stato').value,tel:document.getElementById('p-tel').value.trim(),ruolo:document.getElementById('p-ruolo').value,note:document.getElementById('p-note').value.trim()};
+  const obj={cognome,nome,dataNascita:document.getElementById('p-dataNascita').value,categoria:document.getElementById('p-categoria').value,data:document.getElementById('p-data').value,stato:document.getElementById('p-stato').value,tel:document.getElementById('p-tel').value.trim(),nomeGenitore:document.getElementById('p-nomeGenitore').value.trim(),ruolo:document.getElementById('p-ruolo').value,note:document.getElementById('p-note').value.trim()};
   try{
     if(id) await db.collection('provini').doc(id).set(obj);
     else    await db.collection('provini').add(obj);
@@ -1056,7 +1060,7 @@ function editProvino(id) {
   const p=provini.find(x=>x.id===id);if(!p)return;
   document.getElementById('edit-p-id').value=id;
   document.getElementById('modal-p-title').textContent='Modifica Provino';
-  ['cognome','nome','anno','tel','note'].forEach(k=>document.getElementById('p-'+k).value=p[k]||'');
+  ['cognome','nome','dataNascita','tel','nomeGenitore','note'].forEach(k=>document.getElementById('p-'+k).value=p[k]||'');
   document.getElementById('p-categoria').value=p.categoria||'';document.getElementById('p-data').value=p.data||'';
   document.getElementById('p-stato').value=p.stato||'In valutazione';document.getElementById('p-ruolo').value=p.ruolo||'';
   openModal('provini',false);
@@ -1134,13 +1138,26 @@ function today(){return new Date().toISOString().slice(0,10).replace(/-/g,'');}
 
 function exportCSV(type){
   const data=type==='tesserati'?tesserati:provini;
-  const head=type==='tesserati'?['Cognome','Nome','Anno','Categoria','Telefono','Ruolo','Note']:['Cognome','Nome','Anno','Categoria','Data Provino','Stato','Telefono','Ruolo','Note'];
-  const rows=data.map(p=>type==='tesserati'?[p.cognome,p.nome,p.anno,p.categoria,p.tel,p.ruolo,p.note]:[p.cognome,p.nome,p.anno,p.categoria,p.data,p.stato,p.tel,p.ruolo,p.note]);
+  const head=type==='tesserati'
+    ?['Cognome','Nome','Data nascita','Categoria','Telefono','Nome genitore','Ruolo','Note']
+    :['Cognome','Nome','Data nascita','Categoria','Data Provino','Stato','Telefono','Nome genitore','Ruolo','Note'];
+  const rows=data.map(p=>type==='tesserati'
+    ?[p.cognome,p.nome,p.dataNascita?fmtDate(p.dataNascita):'',p.categoria,p.tel,p.nomeGenitore,p.ruolo,p.note]
+    :[p.cognome,p.nome,p.dataNascita?fmtDate(p.dataNascita):'',p.categoria,p.data?fmtDate(p.data):'',p.stato,p.tel,p.nomeGenitore,p.ruolo,p.note]);
   download([head,...rows].map(r=>r.map(c=>`"${(c||'').replace(/"/g,'""')}"`).join(',')).join('\n'),`${type}_${today()}.csv`,'text/csv');
 }
 function exportTXT(type){
   const data=type==='tesserati'?tesserati:provini;
-  download(data.map((p,i)=>{const l=[`${i+1}. ${p.cognome} ${p.nome} (${p.anno||'?'}) — ${p.categoria||'N/D'}`];if(p.tel)l.push(`   Tel: ${p.tel}`);if(p.ruolo)l.push(`   Ruolo: ${p.ruolo}`);if(type==='provini')l.push(`   Stato: ${p.stato||'—'} | Data: ${p.data?fmtDate(p.data):'—'}`);if(p.note)l.push(`   Note: ${p.note}`);return l.join('\n');}).join('\n\n'),`${type}_${today()}.txt`,'text/plain');
+  download(data.map((p,i)=>{
+    const nascita=p.dataNascita?fmtDate(p.dataNascita):'?';
+    const l=[`${i+1}. ${p.cognome} ${p.nome} (${nascita}) — ${p.categoria||'N/D'}`];
+    if(p.tel)l.push(`   Tel: ${p.tel}`);
+    if(p.nomeGenitore)l.push(`   Genitore: ${p.nomeGenitore}`);
+    if(p.ruolo)l.push(`   Ruolo: ${p.ruolo}`);
+    if(type==='provini')l.push(`   Stato: ${p.stato||'—'} | Data: ${p.data?fmtDate(p.data):'—'}`);
+    if(p.note)l.push(`   Note: ${p.note}`);
+    return l.join('\n');
+  }).join('\n\n'),`${type}_${today()}.txt`,'text/plain');
 }
 function download(content,filename,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=filename;a.click();}
 
