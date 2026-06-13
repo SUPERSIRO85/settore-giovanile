@@ -627,7 +627,7 @@
           <th onclick="sortTable('tesserati','nome')">Nome ↕</th>
           <th onclick="sortTable('tesserati','dataNascita')">Data nascita ↕</th>
           <th onclick="sortTable('tesserati','categoria')">Categoria ↕</th>
-          <th>Telefono</th><th>Nome genitore</th><th>Ruolo</th><th>Note</th><th></th>
+          <th>Ruolo</th><th>Note</th><th></th>
         </tr></thead>
         <tbody id="body-tesserati"></tbody>
       </table></div>
@@ -665,7 +665,7 @@
           <th onclick="sortTable('provini','categoria')">Categoria ↕</th>
           <th onclick="sortTable('provini','data')">Data Provino ↕</th>
           <th onclick="sortTable('provini','stato')">Stato ↕</th>
-          <th>Telefono</th><th>Nome genitore</th><th>Note</th><th></th>
+          <th>Note</th><th></th>
         </tr></thead>
         <tbody id="body-provini"></tbody>
       </table></div>
@@ -980,13 +980,11 @@ function renderTesserati() {
   let data=sorted(tesserati.filter(p=>(p.nome+' '+p.cognome).toLowerCase().includes(q)&&(!cat||p.categoria===cat)),'tesserati');
   document.getElementById('count-t').textContent=data.length+' giocator'+(data.length===1?'e':'i');
   const body=document.getElementById('body-tesserati');
-  if(!data.length){body.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="icon">👦</div><p>Nessun tesserato trovato.</p></div></td></tr>`;updateBadges();return;}
+  if(!data.length){body.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="icon">👦</div><p>Nessun tesserato trovato.</p></div></td></tr>`;updateBadges();return;}
   body.innerHTML=data.map(p=>`<tr>
     <td><strong>${esc(p.cognome)}</strong></td><td>${esc(p.nome)}</td>
     <td>${fmtNascita(p.dataNascita)}</td>
     <td><span class="cat-badge ${catClass(p.categoria)}">${esc(p.categoria||'—')}</span></td>
-    <td>${p.tel?`<a class="tel-link" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>`:'—'}</td>
-    <td>${p.nomeGenitore?`<span style="font-size:13px">${esc(p.nomeGenitore)}</span>`:'—'}</td>
     <td>${p.ruolo?`<span style="font-size:13px;color:var(--muted)">${esc(p.ruolo)}</span>`:'—'}</td>
     <td>${p.note?`<button class="note-btn" onclick="showNote('${encodeURIComponent(p.note)}')" title="Vedi">📝</button>`:'—'}</td>
     <td><div class="actions">
@@ -1004,15 +1002,13 @@ function renderProvini() {
   let data=sorted(provini.filter(p=>(p.nome+' '+p.cognome).toLowerCase().includes(q)&&(!cat||p.categoria===cat)&&(!stato||p.stato===stato)),'provini');
   document.getElementById('count-p').textContent=data.length+' provino'+(data.length===1?'':'i');
   const body=document.getElementById('body-provini');
-  if(!data.length){body.innerHTML=`<tr><td colspan="10"><div class="empty"><div class="icon">🔍</div><p>Nessun provino trovato.</p></div></td></tr>`;updateBadges();return;}
+  if(!data.length){body.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="icon">🔍</div><p>Nessun provino trovato.</p></div></td></tr>`;updateBadges();return;}
   body.innerHTML=data.map(p=>`<tr>
     <td><strong>${esc(p.cognome)}</strong></td><td>${esc(p.nome)}</td>
     <td>${fmtNascita(p.dataNascita)}</td>
     <td><span class="cat-badge ${catClass(p.categoria)}">${esc(p.categoria||'—')}</span></td>
     <td>${p.data?fmtDate(p.data):'—'}</td>
     <td><span class="status-pill ${statusClass(p.stato)}">${esc(p.stato||'—')}</span></td>
-    <td>${p.tel?`<a class="tel-link" href="tel:${esc(p.tel)}">${esc(p.tel)}</a>`:'—'}</td>
-    <td>${p.nomeGenitore?`<span style="font-size:13px">${esc(p.nomeGenitore)}</span>`:'—'}</td>
     <td>${p.note?`<button class="note-btn" onclick="showNote('${encodeURIComponent(p.note)}')" title="Vedi">📝</button>`:'—'}</td>
     <td><div class="actions">
       ${p.stato==='Promosso'?`<button class="icon-btn prom" onclick="promuovi('${p.id}')" title="Sposta in Tesserati">⬆️</button>`:''}
